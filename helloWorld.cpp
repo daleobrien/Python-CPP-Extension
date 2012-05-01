@@ -4,10 +4,10 @@ using namespace std;
 
 static PyObject * print_hello_world(PyObject *self, PyObject *args){
 
-    // create a set, contianing just one item, "hello"
-    wstring w = L"hello";
+    // create a set containing "hello" & "world"
     PyObject *set = PySet_New(NULL);
-    PySet_Add(set, Py_BuildValue("O", PyUnicode_FromWideChar(w.c_str(), w.length())));
+    PySet_Add(set, Py_BuildValue("s","hello"));
+    PySet_Add(set, Py_BuildValue("s","world"));
     return Py_BuildValue("O", set);
 
 }
