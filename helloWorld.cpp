@@ -2,13 +2,14 @@
 #include <iostream>
 using namespace std;
 
-static PyObject * print_hello_world(PyObject *self, PyObject *args)
-{
+static PyObject * print_hello_world(PyObject *self, PyObject *args){
+
+    // create a set, contianing just one item, "hello"
     wstring w = L"hello";
-    PyObject *list = PySet_New(NULL);
-    PySet_Add(list, Py_BuildValue("O", PyUnicode_FromWideChar(w.c_str(), w.length())));
-    //PyList_Append(list, Py_BuildValue("O", PyUnicode_FromWideChar(w.c_str(), w.length())));
-    return Py_BuildValue("O", list);
+    PyObject *set = PySet_New(NULL);
+    PySet_Add(set, Py_BuildValue("O", PyUnicode_FromWideChar(w.c_str(), w.length())));
+    return Py_BuildValue("O", set);
+
 }
 
 static PyMethodDef HelloWorldMethods[] = {
@@ -16,8 +17,7 @@ static PyMethodDef HelloWorldMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC inithelloWorld(void)
-{
+PyMODINIT_FUNC inithelloWorld(void){
     (void) Py_InitModule("helloWorld", HelloWorldMethods);
 }
 

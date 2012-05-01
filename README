@@ -1,20 +1,13 @@
-Created an maintained by:
-Sushant Khurana
-(www.sukh.us)
-
-For questions / enhancements write on the issues list or email 
-
-sushant@sukh.us
+## Simple Python CPP extension
 
 
-MakeFile would be available soon. Build to a shared object to access the c library as a python 
-package.
+### Build
 
-usage:
+    python setup.py install
 
-> import helloworld
+### Run
 
->helloworld.printhelloworld()
+    python runme.py
 
 
 
