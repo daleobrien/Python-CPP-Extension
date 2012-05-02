@@ -3,11 +3,38 @@
 using namespace std;
 
 
-class Test {
-    public:
-        int a;
-        
+typedef class {
+    PyObject_HEAD
+    /* Type-specific fields go here. */
+    int k;
+} SimpleObject;
+
+static PyTypeObject simpleObjectType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "Simple Object",           /*tp_name*/
+    sizeof(SimpleObject),      /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    0,                         /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    "Simple object",           /* tp_doc */
 };
+
+
 
 static PyObject * print_hello_world(PyObject *self, PyObject *args){
 
@@ -55,9 +82,16 @@ static PyMethodDef HelloWorldMethods[] = {
 };
 
 
-
 PyMODINIT_FUNC inithelloWorld(void){
-    (void) Py_InitModule("helloWorld", HelloWorldMethods);
+
+    PyObject* m = Py_InitModule("helloWorld", HelloWorldMethods);
+
+    simpleObjectType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&simpleObjectType) < 0){ return; }
+
+    Py_INCREF(&simpleObjectType);
+    PyModule_AddObject(m, "Simple", (PyObject *)&simpleObjectType);
+
 }
 
 int main(void) {
