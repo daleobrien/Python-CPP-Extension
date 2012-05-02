@@ -2,31 +2,47 @@
 #include <iostream>
 using namespace std;
 
+
+class Test {
+    public:
+        int a;
+        
+};
+
 static PyObject * print_hello_world(PyObject *self, PyObject *args){
 
     // create a set containing "hello" & "world"
+    
     PyObject *set = PySet_New(NULL);
+
     PySet_Add(set, Py_BuildValue("s","hello"));
     PySet_Add(set, Py_BuildValue("s","world"));
+
     return Py_BuildValue("O", set);
 
 }
 
 static PyObject * dict_in_r_dict_out(PyObject *self, PyObject *args){
     
-    // TODO: extract dict from input 
+    // expect an dict, will return it with the values swapped with the keys
+    
+    PyObject *dict_out = PyDict_New();
 
-    PyObject *dict = PyDict_New();
+    PyObject *dict_in;
+    PyObject *callback = NULL;
+    
+    // iterator over items in dict_in
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    if (PyArg_UnpackTuple(args, "ref", 1, 2, &dict_in, &callback)) {
+        
+        // insert, and swap key & value
+        while (PyDict_Next(dict_in, &pos, &key, &value ) ) {
+            PyDict_SetItem(dict_out, value, key);
+        }
+    }
 
-    PyObject *x = PyFloat_FromDouble(1.0); 
-    PyObject *z = PyFloat_FromDouble(2.0); 
-
-    PyDict_SetItem(dict, x, z);
-
-    Py_DECREF(x);
-    Py_DECREF(z);
-
-    return Py_BuildValue("O", dict);
+    return Py_BuildValue("O", dict_out);
     
 }
 
