@@ -1,4 +1,9 @@
 
+# for OSX , ...
+#
+# export CC=clang
+#
+
 from distutils.core import setup, Extension
 
 module = Extension('helloWorld', sources = ['helloWorld.cpp'])
