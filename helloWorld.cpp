@@ -6,7 +6,7 @@ using namespace std;
 
 typedef struct {
     PyObject_HEAD
-    long i;
+    long i; // Could point to my external class, ... then I can keep it simple :)
     long j;
     long k;
 } SimpleObject;
