@@ -46,6 +46,19 @@ simpleObjectInit(SimpleObject *self, PyObject *args, PyObject *kwds){
     // get them and convert, where posible, should check limits, e.t.c, convert strings, and so on...
     if( i && PyInt_Check(i) ){ self->i = PyInt_AS_LONG(i); }
     else if( i && PyFloat_Check(i) ){ self->i = PyFloat_AsDouble(i); }
+    else if( i && PyString_Check(i) ){
+
+        //PyObject* pStrObj = PyUnicode_AsUTF8String(i);
+        char* zStr = PyBytes_AsString(i);
+        cout << zStr << endl;
+        //char* zStrDup = strdup(zStr);
+        //Py_DECREF(pStrObj);
+        //cout << zStrDup << endl;
+
+        //PyObject *x = PyInt_FromString(zStrDup,NULL,10);
+        //self->i = PyInt_AS_LONG(x); 
+        //Py_DECREF(x);
+    }
     else if( i ){ 
         // can't convert, ... 
         PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a ... type.");
