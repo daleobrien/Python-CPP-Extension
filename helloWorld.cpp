@@ -4,12 +4,22 @@
 #include <iostream>
 using namespace std;
 
+class SomeClass {
+
+  public:
+    int i;
+    int j;
+    int k;
+    SomeClass():i(0),j(0),k(0){};
+    ~SomeClass(){};
+};
+
 typedef struct {
     PyObject_HEAD
-    long i; // Could point to my external class, ... then I can keep it simple :)
-    long j;
-    long k;
+    SomeClass * klass; // some external class, which may have all kinds of stuff in it, e.g. non-POD
+                       // klass vars that are exposed are placed into 4 places in the code below ...
 } SimpleObject;
+
 
 static PyMethodDef simpleObjectMethods[] = {
    // {"name", (PyCFunction)Noddy_name, METH_NOARGS, "Return the name, combining the first and last name" },
@@ -23,52 +33,63 @@ simpleObjectNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
     self = (SimpleObject *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->i = 0;
-        self->j = 0;
-        self->k = 0;
+        SomeClass *x = new SomeClass;
+        self->klass = x;
     }
 
     return (PyObject *)self;
 }
 
+bool convert_to_an_int_from_Int_or_Str(PyObject* in, int* out){
+    // return true if an error occured
+
+    if( in==NULL){
+        // no errors, no parameter
+        return false;
+    }
+
+    // get them and convert, where posible, should check limits, e.t.c, convert strings, and so on...
+    if( in && PyInt_Check(in) ){ 
+
+        *out = PyInt_AS_LONG(in); 
+        return false;
+
+    } else if( PyString_Check(in) ){
+
+        PyObject *x = PyInt_FromString( PyBytes_AsString(in),0,10);
+ 
+        long z = PyInt_AsLong(x);
+        if ( PyErr_Occurred()  == NULL ){
+            *out = z;
+            return false;
+        } else{
+            PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a string type ");
+            return true;
+        }
+    }
+    // can't convert, ... 
+    PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a ... type.");
+    return true;
+   
+
+}
 
 static int
 simpleObjectInit(SimpleObject *self, PyObject *args, PyObject *kwds){
 
     PyObject *i=NULL, *j=NULL, *k=NULL;
 
+    // any kwargs, and args ?
     static char *kwlist[] = {(char*)"i", (char*)"j",(char*)"k", NULL};
 
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "|OOO", kwlist, &i, &j, &k)){
         return -1; 
     }
 
-    // get them and convert, where posible, should check limits, e.t.c, convert strings, and so on...
-    if( i && PyInt_Check(i) ){ self->i = PyInt_AS_LONG(i); }
-    else if( i && PyFloat_Check(i) ){ self->i = PyFloat_AsDouble(i); }
-    else if( i && PyString_Check(i) ){
-
-        //PyObject* pStrObj = PyUnicode_AsUTF8String(i);
-        char* zStr = PyBytes_AsString(i);
-        cout << zStr << endl;
-        //char* zStrDup = strdup(zStr);
-        //Py_DECREF(pStrObj);
-        //cout << zStrDup << endl;
-
-        //PyObject *x = PyInt_FromString(zStrDup,NULL,10);
-        //self->i = PyInt_AS_LONG(x); 
-        //Py_DECREF(x);
-    }
-    else if( i ){ 
-        // can't convert, ... 
-        PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a ... type.");
-        return -1;
-        // 
-    }
-
-
-    if( j && PyInt_Check(j) ){ self->j = PyInt_AS_LONG(j); }
-    if( k && PyInt_Check(k) ){ self->k = PyInt_AS_LONG(k); }
+    // (1) ***  update klass variables directly
+    if( convert_to_an_int_from_Int_or_Str(i, &(self->klass->i)) ){ return -1; }
+    if( convert_to_an_int_from_Int_or_Str(j, &(self->klass->j)) ){ return -1; }
+    if( convert_to_an_int_from_Int_or_Str(k, &(self->klass->k)) ){ return -1; }
 
     return 0;
 }
@@ -82,6 +103,11 @@ simpleObjectTraverse(SimpleObject *self, visitproc visit, void *arg) {
 
 static int 
 simpleObjectClear(SimpleObject *self) {
+
+    if(self->klass){
+        delete self->klass;
+        self->klass=NULL;
+    }
     return 0;
 }
 
@@ -94,11 +120,44 @@ simpleObjectDealloc(SimpleObject* self){
 
 
 static PyMemberDef simpleObjectMembers[] = {
-    {(char *)"i", T_INT, offsetof(SimpleObject, i), 0, (char *)"i factor"},
-    {(char *)"j", T_INT, offsetof(SimpleObject, j), 0, (char *)"j factor"},
-    {(char *)"k", T_INT, offsetof(SimpleObject, k), 0, (char *)"k factor"},
+    // (2) *** expose klass variables to python
+    {(char *)"i", T_INT, -1, 0, (char *)"i factor"}, // just so it shows up with the python dir command
+    {(char *)"j", T_INT, -1, 0, (char *)"j factor"}, // they are never called for setting/getting directly
+    {(char *)"k", T_INT, -1, 0, (char *)"k factor"}, //
+   // {(char *)"klass", T_INT, offsetof(SimpleObject, klass), 0, (char *)"klass"},
     {NULL} 
 };
+
+int simpleObjectSetAttrO(PyObject *obj, PyObject *name, PyObject *value){
+
+    SimpleObject *self = (SimpleObject *) obj;
+
+    char* variable = PyBytes_AsString(name);
+
+    // (3) *** over-ride setters,  redirect some to klass variables
+    if(strncmp( variable, "i",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->i))==true?-1:0; }
+    if(strncmp( variable, "j",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->j))==true?-1:0; }
+    if(strncmp( variable, "k",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->k))==true?-1:0; }
+
+    // default setter for everything else
+    return  PyObject_GenericSetAttr(obj,name,value);
+}
+
+static PyObject*
+simpleObjectGetAttrO(PyObject *obj, PyObject* name){
+
+    SimpleObject *self = (SimpleObject *) obj;
+    char* variable = PyBytes_AsString(name);
+
+    // (4) *** over-ride setters,  redirect some to klass variables
+    if(strncmp( variable, "i",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->i ); return r; }
+    if(strncmp( variable, "j",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->j ); return r; }
+    if(strncmp( variable, "k",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->k ); return r; }
+   
+    // default getter for everything else
+    return PyObject_GenericGetAttr(obj, name);
+}
+
 
 static PyTypeObject simpleObjectType = {
     PyObject_HEAD_INIT(NULL)
@@ -118,11 +177,11 @@ static PyTypeObject simpleObjectType = {
     0,                         /*tp_hash */
     0,                         /*tp_call*/
     0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
+    simpleObjectGetAttrO,      /*tp_getattro*/
+    simpleObjectSetAttrO,      /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, 
-    "Simple object docs",    
+    "Simple object docs ...",    
     (traverseproc)simpleObjectTraverse,	
     (inquiry)simpleObjectClear,
     0,		                   /* tp_richcompare */
