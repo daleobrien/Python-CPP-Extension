@@ -40,19 +40,19 @@ simpleObjectNew(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)self;
 }
 
-bool convert_to_an_int_from_Int_or_Str(PyObject* in, int* out){
-    // return true if an error occured
+int convert_to_an_int_from_Int_or_Str(PyObject* in, void* out){
+    // return 0 if an error occured, else 1
 
     if( in==NULL){
         // no errors, no parameter
-        return false;
+        return 1;
     }
 
     // get them and convert, where posible, should check limits, e.t.c, convert strings, and so on...
     if( in && PyInt_Check(in) ){ 
 
-        *out = PyInt_AS_LONG(in); 
-        return false;
+       *(int *)out = PyInt_AS_LONG(in); 
+        return 1;
 
     } else if( PyString_Check(in) ){
 
@@ -60,16 +60,16 @@ bool convert_to_an_int_from_Int_or_Str(PyObject* in, int* out){
  
         long z = PyInt_AsLong(x);
         if ( PyErr_Occurred()  == NULL ){
-            *out = z;
-            return false;
+            *( int *)out = z;
+            return 1;
         } else{
             PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a string type ");
-            return true;
+            return 0;
         }
     }
     // can't convert, ... 
     PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a ... type.");
-    return true;
+    return 0;
    
 
 }
@@ -79,17 +79,15 @@ simpleObjectInit(SimpleObject *self, PyObject *args, PyObject *kwds){
 
     PyObject *i=NULL, *j=NULL, *k=NULL;
 
-    // any kwargs, and args ?
+    // (1) ***  update klass variables directly
     static char *kwlist[] = {(char*)"i", (char*)"j",(char*)"k", NULL};
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "|OOO", kwlist, &i, &j, &k)){
+    if (! PyArg_ParseTupleAndKeywords(args, kwds, "|O&O&O&", kwlist,
+           convert_to_an_int_from_Int_or_Str, &(self->klass->i),
+           convert_to_an_int_from_Int_or_Str, &(self->klass->j),
+           convert_to_an_int_from_Int_or_Str, &(self->klass->k)) ){
         return -1; 
     }
-
-    // (1) ***  update klass variables directly
-    if( convert_to_an_int_from_Int_or_Str(i, &(self->klass->i)) ){ return -1; }
-    if( convert_to_an_int_from_Int_or_Str(j, &(self->klass->j)) ){ return -1; }
-    if( convert_to_an_int_from_Int_or_Str(k, &(self->klass->k)) ){ return -1; }
 
     return 0;
 }
@@ -113,10 +111,10 @@ simpleObjectClear(SimpleObject *self) {
 
 static void
 simpleObjectDealloc(SimpleObject* self){
+
     simpleObjectClear(self);
     self->ob_type->tp_free((PyObject*)self);
 }
-
 
 
 static PyMemberDef simpleObjectMembers[] = {
@@ -135,9 +133,9 @@ int simpleObjectSetAttrO(PyObject *obj, PyObject *name, PyObject *value){
     char* variable = PyBytes_AsString(name);
 
     // (3) *** over-ride setters,  redirect some to klass variables
-    if(strncmp( variable, "i",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->i))==true?-1:0; }
-    if(strncmp( variable, "j",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->j))==true?-1:0; }
-    if(strncmp( variable, "k",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->k))==true?-1:0; }
+    if(strncmp( variable, "i",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->i))==0?-1:0; }
+    if(strncmp( variable, "j",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->j))==0?-1:0; }
+    if(strncmp( variable, "k",1) ==0){ return ( convert_to_an_int_from_Int_or_Str(value, &self->klass->k))==0?-1:0; }
 
     // default setter for everything else
     return  PyObject_GenericSetAttr(obj,name,value);
@@ -254,8 +252,6 @@ PyMODINIT_FUNC inithelloWorld(void){
     if (PyType_Ready(&simpleObjectType) < 0){ return; }
 
     PyObject* m = Py_InitModule3("helloWorld", HelloWorldMethods,"Module Documentation");
-
-    //simpleObjectType.tp_new = PyType_GenericNew;
 
     Py_INCREF(&simpleObjectType);
     PyModule_AddObject(m, "Simple", (PyObject *)&simpleObjectType);

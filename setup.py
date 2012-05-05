@@ -1,8 +1,7 @@
-
 # for OSX , ...
 #
 # export CC=clang
-#
+# export LDSHARED='clang -bundle -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk -g'
 
 from distutils.core import setup, Extension
 
