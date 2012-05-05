@@ -17,7 +17,7 @@ class SomeClass {
 typedef struct {
     PyObject_HEAD
     SomeClass * klass; // some external class, which may have all kinds of stuff in it, e.g. non-POD
-                       // klass vars that are exposed are placed into 4 places in the code below ...
+                       // class vars that are exposed are placed into 4 places in the code below ... numbered (1) - (4)
 } SimpleObject;
 
 
@@ -123,8 +123,8 @@ static PyMemberDef simpleObjectMembers[] = {
     // (2) *** expose klass variables to python
     {(char *)"i", T_INT, -1, 0, (char *)"i factor"}, // just so it shows up with the python dir command
     {(char *)"j", T_INT, -1, 0, (char *)"j factor"}, // they are never called for setting/getting directly
-    {(char *)"k", T_INT, -1, 0, (char *)"k factor"}, //
-   // {(char *)"klass", T_INT, offsetof(SimpleObject, klass), 0, (char *)"klass"},
+    {(char *)"k", T_INT, -1, 0, (char *)"k factor"}, // Note: can't used offset() for a non-POD class
+   // {(char *)"variable", T_INT, offsetof(SimpleObject, x), 0, (char *)"variable"},
     {NULL} 
 };
 
