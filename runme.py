@@ -25,6 +25,7 @@ assert "j" in d
 assert "k" in d
 assert "l" in d
 assert "t" in d
+assert "unit" in d
 assert "klass" not in d
 
 s.i = 13
@@ -32,6 +33,15 @@ assert s.i == 13
 s.j = 444
 assert s.i == 13
 assert s.j == 444
+
+# Test a class method
+s.i = 10
+s.j = 10
+s.k = 10
+s.unit()
+assert s.i == 1
+assert s.j == 1
+assert s.k == 1
 
 # a list and tuple
 assert s.l == [3, 2, 1]

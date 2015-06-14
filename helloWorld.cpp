@@ -25,9 +25,13 @@ typedef struct {
                        // class vars that are exposed are placed into 4 places in the code below ... numbered (1) - (4)
 } SimpleObject;
 
+static PyObject * Unit(PyObject *obj, PyObject *args,  PyObject *kwds ){
+    ( (SimpleObject*) obj)->klass->unit();
+    return Py_BuildValue("");
+}
 
 static PyMethodDef simpleObjectMethods[] = {
-   // {"name", (PyCFunction)Noddy_name, METH_NOARGS, "Return the name, combining the first and last name" },
+    {"unit", (PyCFunction)Unit, METH_NOARGS, "Unit" },
     {NULL}
 };
 
