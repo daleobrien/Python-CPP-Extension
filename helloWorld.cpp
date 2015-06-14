@@ -11,6 +11,11 @@ class SomeClass {
     int j;
     int k;
     SomeClass():i(0),j(0),k(0){};
+    void unit(){
+        this->i = 1;
+        this->j = 1;
+        this->k = 1;
+    }
     ~SomeClass(){};
 };
 
@@ -23,7 +28,7 @@ typedef struct {
 
 static PyMethodDef simpleObjectMethods[] = {
    // {"name", (PyCFunction)Noddy_name, METH_NOARGS, "Return the name, combining the first and last name" },
-    {NULL}  
+    {NULL}
 };
 
 static PyObject *
@@ -49,15 +54,15 @@ int convert_to_an_int_from_Int_or_Str(PyObject* in, void* out){
     }
 
     // get them and convert, where posible, should check limits, e.t.c, convert strings, and so on...
-    if( in && PyInt_Check(in) ){ 
+    if( in && PyInt_Check(in) ){
 
-       *(int *)out = PyInt_AS_LONG(in); 
+       *(int *)out = PyInt_AS_LONG(in);
         return 1;
 
     } else if( PyString_Check(in) ){
 
         PyObject *x = PyInt_FromString( PyBytes_AsString(in),0,10);
- 
+
         long z = PyInt_AsLong(x);
         if ( PyErr_Occurred()  == NULL ){
             *( int *)out = z;
@@ -67,17 +72,15 @@ int convert_to_an_int_from_Int_or_Str(PyObject* in, void* out){
             return 0;
         }
     }
-    // can't convert, ... 
+    // can't convert, ...
     PyErr_SetString(PyExc_TypeError, "Cannot set 'i', expecting an INT type, got a ... type.");
     return 0;
-   
+
 
 }
 
 static int
 simpleObjectInit(SimpleObject *self, PyObject *args, PyObject *kwds){
-
-    PyObject *i=NULL, *j=NULL, *k=NULL;
 
     // (1) ***  update klass variables directly
     static char *kwlist[] = {(char*)"i", (char*)"j",(char*)"k", NULL};
@@ -86,7 +89,7 @@ simpleObjectInit(SimpleObject *self, PyObject *args, PyObject *kwds){
            convert_to_an_int_from_Int_or_Str, &(self->klass->i),
            convert_to_an_int_from_Int_or_Str, &(self->klass->j),
            convert_to_an_int_from_Int_or_Str, &(self->klass->k)) ){
-        return -1; 
+        return -1;
     }
 
     return 0;
@@ -99,7 +102,7 @@ simpleObjectTraverse(SimpleObject *self, visitproc visit, void *arg) {
     return 0;
 }
 
-static int 
+static int
 simpleObjectClear(SimpleObject *self) {
 
     if(self->klass){
@@ -122,8 +125,11 @@ static PyMemberDef simpleObjectMembers[] = {
     {(char *)"i", T_INT, -1, 0, (char *)"i factor"}, // just so it shows up with the python dir command
     {(char *)"j", T_INT, -1, 0, (char *)"j factor"}, // they are never called for setting/getting directly
     {(char *)"k", T_INT, -1, 0, (char *)"k factor"}, // Note: can't used offset() for a non-POD class
+
+    {(char *)"t", T_INT, -1, 0, (char *)"the tuple"}, // Note: can't used offset() for a non-POD class
+    {(char *)"l", T_INT, -1, 0, (char *)"the list"}, // Note: can't used offset() for a non-POD class
    // {(char *)"variable", T_INT, offsetof(SimpleObject, x), 0, (char *)"variable"},
-    {NULL} 
+    {NULL}
 };
 
 int simpleObjectSetAttrO(PyObject *obj, PyObject *name, PyObject *value){
@@ -151,7 +157,11 @@ simpleObjectGetAttrO(PyObject *obj, PyObject* name){
     if(strncmp( variable, "i",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->i ); return r; }
     if(strncmp( variable, "j",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->j ); return r; }
     if(strncmp( variable, "k",1) ==0){ PyObject *r = PyInt_FromLong(self->klass->k ); return r; }
-   
+
+    // Some containers
+    if(strncmp( variable, "t",1) ==0){ return Py_BuildValue("(iii)", 3, 2, 1); }
+    if(strncmp( variable, "l",1) ==0){ return Py_BuildValue("[iii]", 3, 2, 1); }
+
     // default getter for everything else
     return PyObject_GenericGetAttr(obj, name);
 }
@@ -178,16 +188,16 @@ static PyTypeObject simpleObjectType = {
     simpleObjectGetAttrO,      /*tp_getattro*/
     simpleObjectSetAttrO,      /*tp_setattro*/
     0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, 
-    "Simple object docs ...",    
-    (traverseproc)simpleObjectTraverse,	
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    "Simple object docs ...",
+    (traverseproc)simpleObjectTraverse,
     (inquiry)simpleObjectClear,
     0,		                   /* tp_richcompare */
     0,		                   /* tp_weaklistoffset */
     0,		                   /* tp_iter */
     0,		                   /* tp_iternext */
-    simpleObjectMethods,      
-    simpleObjectMembers,     
+    simpleObjectMethods,
+    simpleObjectMembers,
     0,                         /* tp_getset */
     0,                         /* tp_base */
     0,                         /* tp_dict */
@@ -196,15 +206,15 @@ static PyTypeObject simpleObjectType = {
     0,                         /* tp_dictoffset */
     (initproc)simpleObjectInit,
     0,                         /* tp_alloc */
-    simpleObjectNew,           
-    
+    simpleObjectNew,
+
 };
 
 
 static PyObject * print_hello_world(PyObject *self, PyObject *args){
 
     // create a set containing "hello" & "world"
-    
+
     PyObject *set = PySet_New(NULL);
 
     PySet_Add(set, Py_BuildValue("s","hello"));
@@ -215,19 +225,19 @@ static PyObject * print_hello_world(PyObject *self, PyObject *args){
 }
 
 static PyObject * dict_in_r_dict_out(PyObject *self, PyObject *args){
-    
+
     // expect an dict, will return it with the values swapped with the keys
-    
+
     PyObject *dict_out = PyDict_New();
 
     PyObject *dict_in;
     PyObject *callback = NULL;
-    
+
     // iterator over items in dict_in
     PyObject *key, *value;
     Py_ssize_t pos = 0;
     if (PyArg_UnpackTuple(args, "ref", 1, 2, &dict_in, &callback)) {
-        
+
         // insert, and swap key & value
         while (PyDict_Next(dict_in, &pos, &key, &value ) ) {
             PyDict_SetItem(dict_out, value, key);
@@ -235,7 +245,7 @@ static PyObject * dict_in_r_dict_out(PyObject *self, PyObject *args){
     }
 
     return Py_BuildValue("O", dict_out);
-    
+
 }
 
 
